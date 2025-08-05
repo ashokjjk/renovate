@@ -1,0 +1,67 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    "config:recommended"
+  ],
+  "enabledManagers": [
+    "dockerfile",
+    "helmv3",
+    "custom.regex"
+  ],
+  "recreateWhen": "always",
+  "branchPrefix": "renovate/",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/(^|/)Chart\\.ya?ml$/"
+      ],
+      "matchStrings": [
+        "(?m)^#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>[^\\s]+)\\s+registryUrl=(?<registryUrl>\\S+)\\s*\\nversion:\\s*['\"]?(?<currentValue>v?\\d+\\.\\d+\\.\\d+(?:[-+][^\\s'\\\"]+)?)['\"]?\\s*(?:#.*)?$"
+      ],
+      "datasourceTemplate": "{{datasource}}",
+      "depNameTemplate": "{{depName}}",
+      "registryUrlTemplate": "{{registryUrl}}"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "helmv3",
+        "custom.regex"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "groupName": "helm non-major updates",
+      "groupSlug": "helm-non-major"
+    },
+    {
+      "matchManagers": [
+        "helmv3",
+        "custom.regex"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "groupName": "helm major updates",
+      "groupSlug": "helm-major"
+    }
+  ],
+  "prCreation": "immediate",
+  "schedule": [
+    "at any time"
+  ],
+  "rangeStrategy": "bump",
+  "labels": [
+    "dependencies",
+    "helmv3"
+  ],
+  "commitMessagePrefix": "chore(deps):",
+  "commitMessageAction": "update",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "from {{currentVersion}} to {{newVersion}}",
+  "prBody": "This PR updates the Helm chart {{depName}} from version {{currentVersion}} to {{newVersion}}."
+}

@@ -1,0 +1,2 @@
+destination_repo: nexus/cert-manager-cainjector
+version: v1.15.5

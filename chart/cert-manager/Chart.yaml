@@ -1,0 +1,12 @@
+apiVersion: v2
+name: cert-manager
+description: "Wrapper chart for installing cert-manager"
+# renovate: datasource=helm depName=cert-manager registryUrl=https://charts.jetstack.io
+version: v1.15.5
+maintainers:
+  - name: Cloud Engineering, Bhagya Kandage
+    email: bhagya.kandage@ifs.com
+dependencies:
+  - name: cert-manager
+    version: v1.15.5
+    repository: https://charts.jetstack.io
