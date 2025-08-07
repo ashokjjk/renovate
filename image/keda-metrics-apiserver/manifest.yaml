@@ -1,0 +1,2 @@
+destination_repo: nexus/keda-metrics-apiserver
+version: 2.16.1

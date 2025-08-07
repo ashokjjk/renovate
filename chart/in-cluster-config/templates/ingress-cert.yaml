@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ingress-cert
+  namespace: ingress
+spec:
+  commonName: {{ .Values.ingress.host | default "dummy.host.com" }}
+  dnsNames:
+  - "{{ .Values.ingress.host | default "dummy.host.com" }}"
+  duration: 2160h0m0s
+  renewBefore: 720h0m0s  # Certificate is valid for 90 days, renew 30 days before expiry
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: dns-issuer
+  secretName: ingress-default-cert

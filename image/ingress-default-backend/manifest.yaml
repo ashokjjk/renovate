@@ -1,0 +1,2 @@
+destination_repo: nexus/ingress-default-backend
+version: 0.1.0

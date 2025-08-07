@@ -1,0 +1,11 @@
+apiVersion: v2
+name: linkerd-control-plane
+description: "Wrapper chart for installing linkerd-control-plane"
+version: 1.16.11
+maintainers:
+  - name: Cloud Engineering, Bhagya Kandage
+    email: bhagya.kandage@ifs.com
+dependencies:
+  - name: linkerd-control-plane
+    version: 1.16.11
+    repository: https://helm.linkerd.io/stable

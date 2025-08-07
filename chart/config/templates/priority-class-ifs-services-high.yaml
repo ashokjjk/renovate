@@ -1,0 +1,8 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: ifs-services-high
+value: 19004000
+preemptionPolicy: PreemptLowerPriority
+globalDefault: false
+description: "ifs-services-high"

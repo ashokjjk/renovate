@@ -1,0 +1,44 @@
+image:
+  repository: xxx.azurecr.io/nexus
+  tag: 0.0.6
+
+resources:
+  limits:
+    cpu: 1
+    memory: 20Mi
+  requests:
+    cpu: 10m
+    memory: 20Mi
+
+ingress:
+  host: localhost
+
+externalKeys:
+  enabled: false
+  issuer: https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/
+  jwksUrl: https://login.microsoftonline.com/common/discovery/keys
+  # Valid token requested audiences.
+  audienceValidationRegex: "^api://dev.[^\\.]+.ifs.cloud$"
+  # Tenant ID azure tokens must be issued for in order to invoke the endpoints.
+  tenantId: 00000000-0000-0000-0000-000000000000
+  # User upns allowed to use the endpoints.
+  allowedAzureUsers: []
+  # Groups allowed to use the endpoints.
+  allowedAzureGroups: []
+  # Object IDs allowed to use the endpoints.
+  allowedObjectIds: []
+  # Azure token audiences allowed to use the endpoints. If empty it'll default to the management core audience.
+  allowedAzureAudiences:
+    - https://management.core.windows.net/
+
+rsaKey:
+  # Whether the RSA key should be mounted into the container.
+  mount: true
+  # Path to mount the RSA key into.
+  mountPath: /var/jwk-provider/rsa
+  # Name of the RSA key file (the secret key name).
+  secretKey: sig.pem
+  # Whether the RSA key secret should be generated.
+  generate: true
+  # Name of the secret containing the RSA key.
+  secretName: rsa-key

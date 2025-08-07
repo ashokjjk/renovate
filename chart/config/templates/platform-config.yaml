@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: global-config
+  namespace: platform
+data:
+  tokenIssuer: {{ .Values.accessTokenIssuer }}
+  jwksUrl: {{ .Values.jwksUrl }}
+  stage: {{ .Values.stage }}

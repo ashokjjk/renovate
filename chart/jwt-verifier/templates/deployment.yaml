@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jwtverifier
+  namespace: {{ .Release.Namespace }}
+spec:
+  {{- if not .Values.autoscaling.enabled}}
+  replicas: {{ .Values.replicaCount | default 1 }}
+  {{- end}}
+  selector:
+    matchLabels:
+      app: jwtverifier
+  template:
+    metadata:
+      labels:
+        app: jwtverifier
+    spec:
+      {{- if .Values.affinity }}
+      affinity: {{ toYaml .Values.affinity | nindent 8 }}
+      {{- end}}
+      {{- if .Values.topologySpreadConstraints }}
+      topologySpreadConstraints: {{ toYaml .Values.topologySpreadConstraints | nindent 8 }}
+      {{- end}}
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        {{- if .Values.authResolver.enabled }}
+        - name: auth-resolver-sidecar
+          image: {{ .Values.authResolverImageRegistry }}/{{ .Values.authResolver.image.repository }}:{{ .Values.authResolver.image.tag }}
+          imagePullPolicy: {{ .Values.authResolver.image.pullPolicy | default "Always" }}
+          ports:
+            - containerPort: 8085
+          env:
+            - name: APP_RUNTIME
+              value:  {{ .Values.authResolver.runtime | default "development" | quote }}
+          resources:
+            {{- toYaml .Values.authResolver.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8085
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8085
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 10
+        {{- end }}
+        - name: jwtverifier
+          image: |-
+            {{.Values.image.repository}}:{{.Values.image.tag}}
+          imagePullPolicy: |-
+            {{ .Values.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: LOG_LEVEL
+              value: {{.Values.logLevel | default "warn" | quote}}
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: global-config
+                  key: tokenIssuer
+            - name: JWKS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: global-config
+                  key: jwksUrl
+            - name: AUTH_RESOLVER_URL
+              value: {{ .Values.authResolver.url | default "http://localhost:8085" | quote }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            periodSeconds: 1
+            timeoutSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL

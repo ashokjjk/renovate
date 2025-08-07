@@ -1,0 +1,2 @@
+#v0.30.1
+FROM registry.k8s.io/descheduler/descheduler@sha256:725f8813173cde1dc3b8a6708e10f2655546a97d984810e247e287d3845448fc

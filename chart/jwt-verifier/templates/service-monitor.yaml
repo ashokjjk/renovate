@@ -1,0 +1,19 @@
+{{- if .Capabilities.APIVersions.Has "monitoring.coreos.com/v1" }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: jwtverifier-monitor
+  labels:
+    release: {{ .Values.serviceMonitor.labels.release }}
+spec:
+  selector:
+    matchLabels:
+      app: jwtverifier
+  endpoints:
+  - port: http  
+    path: /metrics
+  {{- if .Values.authResolver.enabled }}
+  - port: auth-resolver-metrics
+    path: {{ .Values.authResolver.metrics.path }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,8 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: ifs-infra-cluster-critical
+value: 19009000
+preemptionPolicy: PreemptLowerPriority
+globalDefault: false
+description: "ifs-infra-cluster-critical"

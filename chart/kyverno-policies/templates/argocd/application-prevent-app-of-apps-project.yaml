@@ -1,0 +1,44 @@
+{{- $settings := index (.Values.argocd | default (dict)) "application-prevent-app-of-apps-project" | default (dict) }}
+{{- if and (.Values.argocd).enabled (or $settings.enabled (and (not (hasKey $settings "enabled")) .Values.default.enabled)) }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: application-prevent-app-of-apps-project
+  annotations:
+    policies.kyverno.io/title: Prevent Use of app-of-apps Project
+    policies.kyverno.io/category: Argo
+    policies.kyverno.io/severity: medium
+    kyverno.io/kyverno-version: 1.6.2
+    policies.kyverno.io/minversion: 1.6.0
+    kyverno.io/kubernetes-version: "1.23"
+    policies.kyverno.io/subject: Application
+    policies.kyverno.io/description: >-
+      This policy prevents the use of the app-of-apps project in an Application who's parent is not an appset.
+spec:
+  validationFailureAction: {{ default .Values.default.validationFailureAction $settings.validationFailureAction }}
+  failurePolicy: {{ default .Values.default.failurePolicy $settings.failurePolicy }}
+  admission: {{ default .Values.default.admission $settings.admission }}
+  background: {{ default .Values.default.background $settings.background }}
+  rules:
+    - name: app-of-apps-project
+      skipBackgroundRequests: true
+      match:
+        any:
+          - resources:
+              kinds:
+                - Application
+      preconditions:
+        all:
+          - key: "{{ "{{ request.operation || 'BACKGROUND' }}" }}"
+            operator: NotEquals
+            value: DELETE
+          - key: "{{ "{{ request.object.metadata.ownerReferences[0].kind || '' }}" }}"
+            operator: NotEquals
+            value: "ApplicationSet"
+      validate:
+        allowExistingViolations: true
+        message: "The app of apps project may not be used in an Application."
+        pattern:
+          spec:
+            project: "!app-of-apps"
+{{- end}}

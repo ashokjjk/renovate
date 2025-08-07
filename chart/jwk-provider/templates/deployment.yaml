@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jwk-provider
+  namespace: {{ .Release.Namespace | quote }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jwk-provider
+  template:
+    metadata:
+      labels:
+        app: jwk-provider
+    spec:
+      {{- if .Values.affinity }}
+      affinity: {{ toYaml .Values.affinity | nindent 8 }}
+      {{- end }}      
+      securityContext:
+        runAsNonRoot: true
+      containers:
+        - name: jwk-provider
+          image: {{.Values.image.repository}}:{{.Values.image.tag}}
+          imagePullPolicy: {{ .Values.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - containerPort: 8080
+          env:
+            - name: LOG_LEVEL
+              value: {{.Values.logLevel | default "warn" | quote}}
+            - name: NAMESPACE
+              value: {{.Release.Namespace | quote}}
+            - name: ISSUER
+              valueFrom:
+                configMapKeyRef:
+                  name: global-config
+                  key: tokenIssuer            
+            {{- if (.Values.rsaKey).mount }}
+            - name: PRIVATE_KEY_PATH
+              value: "{{ (.Values.rsaKey).mountPath | required "mountPath is required" }}/{{ (.Values.rsaKey).secretKey | default "sig.pem" }}"
+            {{- end}}
+            {{- if (.Values.externalKeys).enabled }}
+            - name: AUDIENCE_VALIDATION_REGEX
+              value: {{.Values.externalKeys.audienceValidationRegex | required "audienceValidationRegex is required" | quote}}
+            - name: JWKS_URL
+              value: {{.Values.externalKeys.jwksUrl | required "jwksUrl is required" | quote}}
+            - name: ALLOWED_TENANT_ID
+              value: {{.Values.externalKeys.tenantId | required "tenantId is required" | quote}}
+            {{- if and (not .Values.externalKeys.allowedAzureGroups) (not .Values.externalKeys.allowedAzureUsers) }}
+              {{ fail "At least one of externalKeys.allowedAzureGroups or externalKeys.allowedAzureUsers must be set" }}
+            {{- end }}
+            {{- if .Values.externalKeys.allowedAzureGroups }}
+            - name: ALLOWED_AZURE_GROUPS
+              value: {{ join "," .Values.externalKeys.allowedAzureGroups }}
+            {{- end}}
+            {{- if .Values.externalKeys.allowedAzureUsers }}
+            - name: ALLOWED_AZURE_USERS
+              value: {{ join "," .Values.externalKeys.allowedAzureUsers }}
+            {{- end}}
+            {{- if .Values.externalKeys.allowedAzureAudiences }}
+            - name: ALLOWED_AZURE_AUDIENCES
+              value: {{ join "," .Values.externalKeys.allowedAzureAudiences }}
+            {{- end}}
+            {{- if .Values.externalKeys.allowedObjectIds }}
+            - name: ALLOWED_OBJECT_IDS
+              value: {{ join "," .Values.externalKeys.allowedObjectIds }}
+            {{- end}}
+            {{- end}}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8080
+            periodSeconds: 1
+            timeoutSeconds: 5
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+{{- if (.Values.rsaKey).mount }}
+          volumeMounts:
+            - mountPath: {{.Values.rsaKey.mountPath | required "mountPath is required" }}
+              name: rsa-key
+              readOnly: true
+      volumes:
+        - name: rsa-key
+          secret:
+            secretName: {{ (.Values.rsaKey).secretName | default "rsa-key" }}
+            optional: true
+{{- end}}

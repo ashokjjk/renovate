@@ -1,0 +1,29 @@
+# default cluster hostname
+ingress:
+  # -- The hostname of ingress to which the certificate is provisioned
+  host: localhost
+
+# -- The access token issuer URL for JWT verifier
+accessTokenIssuer: https://xxx
+# -- The stage for JWT verifier
+stage: dev
+
+trivy:
+  podDisruptionBudget:
+    operator:
+      # -- Enable PDB for Trivy Operator
+      enabled: false
+      # -- Minimum available replicas of PDB for Trivy Operator
+      minAvailable: 1
+      # -- Maximum available replicas of PDB for Trivy Operator
+      maxUnavailable: 0
+
+# -- The array of cluster secret stores for External secrets. Each element should be in the form of { url: Azure Key vault URL, name: Name of the cluster secret store}
+azureVaults:
+  - name: default
+
+jwk-provider:
+  # -- Create a secret for jwk-provider RSA key
+  createSecret: true
+  # -- The name of the secret for jwk-provider RSA key
+  secretName: jwk-provider-rsa-key

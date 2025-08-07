@@ -1,0 +1,7 @@
+apiVersion: v1
+name: health
+version: 0.1.7
+maintainers:
+  - name: SPO, Markus Sandin
+    email: markus.sandin@ifs.com
+description: Nexus health chart

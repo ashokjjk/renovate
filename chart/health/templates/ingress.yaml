@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: health
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/service-upstream: "true"
+    {{- if (.Values.ingress).annotations }}
+    {{- toYaml .Values.ingress.annotations | nindent 4 }}
+    {{- end }}
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - '{{ .Values.ingress.host }}'
+    secretName: ""
+  rules:
+    - host: '{{ .Values.ingress.host }}'
+      http:
+        paths:
+          - path: /platform/health(?!/v1/ping$)(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: health
+                port:
+                  name: http

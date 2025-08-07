@@ -1,0 +1,11 @@
+apiVersion: v2
+name: linkerd-crds
+description: "Wrapper chart for installing linkerd-crds"
+version: 1.8.0
+maintainers:
+  - name: Cloud Engineering, Bhagya Kandage
+    email: bhagya.kandage@ifs.com
+dependencies:
+  - name: linkerd-crds
+    version: 1.8.0
+    repository: https://helm.linkerd.io/stable

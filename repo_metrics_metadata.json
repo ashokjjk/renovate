@@ -1,0 +1,18 @@
+{
+  "ProductGroup": "BND",
+  "Team": "NEXT GEN APPLICATION PLATFORM",
+  "TeamSize": "10",
+  "RepositorySlug": "nexus-platform-core",
+  "ContactPerson": "tharanga.herath@ifs.com",
+  "JIRAProject": "RNDET",
+  "HasBuildPipeline": "No",
+  "BuildPipeline": "",
+  "HasDeployPipeline": "No",
+  "DeployPipeline": "",
+  "DeploymentFrequency": "On-demand",
+  "RepoAdministrator": "anton.hornquist@ifs.com, mohomed.thariq@ifs.com, tharanga.herath@ifs.com",
+  "NumberOfIntegrationTests": "0",
+  "NumberOfUITests": "0",
+  "SonarProjectSrcPath": "",
+  "SonarProjectKey": "ifs-pd_nexus-platform-core"
+}

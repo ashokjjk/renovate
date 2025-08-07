@@ -1,0 +1,2 @@
+destination_repo: nexus/kyverno/cleanup-controller
+version: v1.12.1

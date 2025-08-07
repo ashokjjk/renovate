@@ -1,0 +1,47 @@
+{{- $settings := index (.Values.general | default (dict)) "require-request-limits" | default (dict) }}
+{{- if or $settings.enabled (and (not (hasKey $settings "enabled")) .Values.default.enabled) }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-request-limits
+  annotations:
+    general.kyverno.io/description: >-
+      As application workloads share cluster resources, it is important to limit resources 
+      requested and consumed by each pod. It is recommended to require 'resources.requests' 
+      and 'resources.limits.memory' per pod. If a namespace level request or limit is specified, 
+      defaults will automatically be applied to each pod based on the 'LimitRange' configuration.
+spec:
+  validationFailureAction: {{ default .Values.default.validationFailureAction $settings.validationFailureAction }}
+  failurePolicy: {{ default .Values.default.failurePolicy $settings.failurePolicy }}
+  admission: {{ default .Values.default.admission $settings.admission }}
+  background: {{ default .Values.default.background $settings.background }}
+  rules:
+    - name: required-resources
+      skipBackgroundRequests: true
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      {{- include "exclusions" $settings | nindent 6 }}
+      preconditions:
+        all:
+          - key: "{{ "{{ request.operation || 'BACKGROUND' }}" }}"
+            operator: NotEquals
+            value: DELETE
+      validate:
+        allowExistingViolations: true
+        message: "CPU and memory resource requests and limits are required."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    memory: "?*"
+                    cpu: "?*"
+                  limits:
+                    memory: "?*"
+                  {{- if $settings.enforceCpuLimits }}
+                    cpu: "?*"
+                  {{- end}}
+{{- end}}

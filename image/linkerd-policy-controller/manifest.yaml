@@ -1,0 +1,2 @@
+destination_repo: nexus/linkerd/policy-controller
+version: stable-2.14.10

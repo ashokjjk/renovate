@@ -1,0 +1,20 @@
+{{- if .Values.enableMutators }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: inject-ingress-service-upstream
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: inject-ingress-service-upstream
+      match:
+        any:
+          - resources:
+              kinds:
+                - Ingress
+      mutate:
+        patchStrategicMerge:
+          metadata:
+            annotations:
+              nginx.ingress.kubernetes.io/service-upstream: "true"
+{{- end}}

@@ -1,0 +1,132 @@
+apiVersion: v2
+name: bundle-platform-core
+version: 0.1.79
+maintainers:
+  - name: Cloud Engineering, Bhagya Kandage
+    email: bhagya.kandage@ifs.com
+description: |
+  The Helm chart for platform core bundle. This chart deploys an ArgoCD Application(CRD), which manages following platform-core components:
+  - Cert manager
+  - platform-core-config or if a local setup then platform-core-in-cluster-config
+  - Descheduler
+  - External secret operator
+  - Health application
+  - Nginx ingress controller
+  - JWT provider
+  - Keda
+  - Kyverno application
+  - Kyverno policy chart
+  - Linkerd
+  - Linkerd CRDs
+  - Trivy operator
+  - Trust manager
+  - ingress-config-chart
+annotations:
+  "ifs.com/deploymentDependencies": |
+     dockerImages:
+       - name: background-controller
+         repository: "file://../../image/background-controller"
+       - name: cleanup-controller
+         repository: "file://../../image/cleanup-controller"
+       - name: kyverno-image
+         repository: "file://../../image/kyverno"
+       - name: kyverno-cli
+         repository: "file://../../image/kyverno-cli"
+       - name: kyvernopre
+         repository: "file://../../image/kyvernopre"
+       - name: reports-controller
+         repository: "file://../../image/reports-controller"
+       - name: cert-manager-acmesolver
+         repository: "file://../../image/cert-manager-acmesolver"
+       - name: cert-manager-cainjector
+         repository: "file://../../image/cert-manager-cainjector"
+       - name: cert-manager-controller
+         repository: "file://../../image/cert-manager-controller"
+       - name: cert-manager-webhook
+         repository: "file://../../image/cert-manager-webhook"
+       - name: cert-manager-ctl
+         repository: "file://../../image/cert-manager-ctl"
+       - name: cert-manager-startupapicheck
+         repository: "file://../../image/cert-manager-startupapicheck"
+       - name: cert-manager-package-debian
+         repository: "file://../../image/cert-manager-package-debian"
+       - name: descheduler-image # FIXME: fix bug so that the same name / alias can be used both in the dockerImages and helmCharts sections
+         repository: "file://../../image/descheduler"
+       - name: external-secrets-image # FIXME: fix bug so that the same name / alias can be used both in the dockerImages and helmCharts sections
+         repository: "file://../../image/external-secrets"
+       - name: health-image # FIXME: fix bug so that the same name / alias can be used both in the dockerImages and helmCharts sections
+         repository: "file://../../image/health"
+       - name: nginx-ingress-controller
+         repository: "file://../../image/ingress-nginx-controller"
+       - name: ingress-nginx-kube-webhook-certgen
+         repository: "file://../../image/ingress-nginx-kube-webhook-certgen"
+       - name: jwk-provider-image # FIXME: fix bug so that the same name / alias can be used both in the dockerImages and helmCharts sections
+         repository: "file://../../image/jwk-provider"
+       - name: jwt-verifier-image # FIXME: fix bug so that the same name / alias can be used both in the dockerImages and helmCharts sections
+         repository: "file://../../image/jwt-verifier"
+       - name: linkerd-controller
+         repository: "file://../../image/linkerd-controller"
+       - name: linkerd-debug
+         repository: "file://../../image/linkerd-debug"
+       - name: linkerd-policy-controller
+         repository: "file://../../image/linkerd-policy-controller"
+       - name: linkerd-proxy
+         repository: "file://../../image/linkerd-proxy"
+       - name: linkerd-proxy-init
+         repository: "file://../../image/linkerd-proxy-init"
+       - name: aquasecurity-trivy
+         repository: "file://../../image/aquasecurity-trivy"
+       - name: aquasecurity-trivy-operator
+         repository: "file://../../image/aquasecurity-trivy-operator"
+       - name: aquasecurity-node-collector
+         repository: "file://../../image/aquasecurity-node-collector"
+       - name: trust-manager-image # FIXME: fix bug so that the same name / alias can be used both in the dockerImages and helmCharts sections
+         repository: "file://../../image/trust-manager"
+       - name: keda-image
+         repository: "file://../../image/keda"
+       - name: keda-admission-webhooks
+         repository: "file://../../image/keda-admission-webhooks"
+       - name: keda-metrics-apiserver
+         repository: "file://../../image/keda-metrics-apiserver"
+       - name: kubectl
+         repository: "file://../../image/kubectl"
+       - name: ingress-default-backend
+         repository: "file://../../image/ingress-default-backend"
+       - name: busybox
+         repository: "file://../../image/busybox"
+     helmCharts:
+       - name: config
+         repository: "file://../../chart/config"
+       - name: in-cluster-config
+         repository: "file://../../chart/in-cluster-config"
+       - name: ingress-config
+         repository: "file://../../chart/ingress-config"
+       - name: kyverno
+         repository: "file://../../chart/kyverno"
+       - name: kyverno-policies
+         repository: "file://../../chart/kyverno-policies"
+       - name: cert-manager
+         repository: "file://../../chart/cert-manager"
+       - name: descheduler
+         repository: "file://../../chart/descheduler"
+       - name: external-secrets
+         repository: "file://../../chart/external-secrets"
+       - name: health
+         repository: "file://../../chart/health"
+       - name: ingress-nginx
+         repository: "file://../../chart/ingress-nginx"
+       - name: jwk-provider
+         repository: "file://../../chart/jwk-provider"
+       - name: jwt-verifier
+         repository: "file://../../chart/jwt-verifier"
+       - name: linkerd-control-plane
+         repository: "file://../../chart/linkerd-control-plane"
+       - name: linkerd-crds
+         repository: "file://../../chart/linkerd-crds"
+       - name: trivy-operator
+         repository: "file://../../chart/trivy-operator"
+       - name: trust-manager
+         repository: "file://../../chart/trust-manager"
+       - name: keda
+         repository: "file://../../chart/keda"
+type: application

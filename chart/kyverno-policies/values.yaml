@@ -1,0 +1,116 @@
+# -- The image repository.
+imageRegistry: xxx.azurecr.io
+
+podSecurityStandards:
+  # -- Enable pod security standards Kyverno cluster policies
+  enabled: true
+  # --  Pod Security Standard level to the targeted pods
+  level: baseline
+  # --  Version of the Pod Security Standards
+  version: latest
+  # -- Controls if a validation policy rule failure should block the admission review request (Enforce) or allow (Audit) the admission review request and report the policy failure in a policy report
+  validationFailureAction: Enforce
+  # -- Defines the API server behavior if the webhook fails to respond. Allowed values are “Ignore” or “Fail”.
+  failurePolicy: Fail
+  # -- Exclusions can be specified using the following format:
+  # exclusion-name:   # this is used for merging purposes.
+  #   match:
+  #     any:          # only "any" is supported
+  #       - resources:
+  #           kinds:
+  #             - Deployment
+  #           names:
+  #             - my-deployment
+  #           namespaces:
+  #             - my-namespace
+  #   images:         # images will be excluded independently from the match block
+  #     - "an-image-*"
+  exclusions:
+    # -- Exclusions for pss-host-process pod security standards Kyverno cluster policy
+    host-process: {}
+    # -- Exclusions for pss-host-namespaces pod security standards Kyverno cluster policy
+    host-namespaces: {}
+    # -- Exclusions for pss-privileged-containers pod security standards Kyverno cluster policy
+    privileged-containers: {}
+    # -- Exclusions for pss-capabilities pod security standards Kyverno cluster policy
+    capabilities: {}
+    # -- Exclusions for pss-hostpath-volumes pod security standards Kyverno cluster policy
+    hostpath-volumes: {}
+    # -- Exclusions for pss-host-ports pod security standards Kyverno cluster policy
+    host-ports: {}
+    # -- Exclusions for pss-apparmor pod security standards Kyverno cluster policy
+    apparmor: {}
+    # -- Exclusions for pss-selinux pod security standards Kyverno cluster policy
+    selinux: {}
+    # -- Exclusions for pss-proc-mount-type pod security standards Kyverno cluster policy
+    proc-mount-type: {}
+    # -- Exclusions for pss-seccomp pod security standards Kyverno cluster policy
+    seccomp: {}
+    # -- Exclusions for pss-sysctls pod security standards Kyverno cluster policy
+    sysctls: {}
+    # -- Exclusions for pss-volume-types pod security standards Kyverno cluster policy
+    volume-types: {}
+    # -- Exclusions for pss-privilege-escalation pod security standards Kyverno cluster policy
+    privilege-escalation: {}
+    # -- Exclusions for pss-running-as-non-root pod security standards Kyverno cluster policy
+    running-as-non-root: {}
+    # -- Exclusions for pss-running-as-non-root-user pod security standards Kyverno cluster policy
+    running-as-non-root-user: {}
+
+default:
+  # -- Enable scanning of existing resources to find potential violations and generating Policy Reports.
+  background: false
+  # -- Controls if a validation policy rule failure should block the admission review request (Enforce) or allow (Audit) the admission review request and report the policy failure in a policy report.
+  validationFailureAction: Enforce
+  # -- Disable all policies
+  enabled: true
+
+general:
+  # -- Kyverno cluster policy configurations for check-ingress-annotation
+  check-ingress-annotation: {}
+  # # Exclusions can be specified using the following format:
+  # exclusions:
+  #   exclusion-name:   # this is used for merging purposes.
+  #     match:
+  #       any:          # only "any" is supported
+  #         - resources:
+  #             kinds:
+  #               - Deployment
+  #             names:
+  #               - my-deployment
+  #             namespaces:
+  #               - my-namespace
+  # -- Kyverno cluster policy configurations for check-limits-requests
+  check-limits-requests:
+    maxAllowedCpu: null  # set this in order to validate that the cpu limit is not higher than this value
+  # -- Kyverno cluster policy configurations for disallow-default-namespace
+  disallow-default-namespace: {}
+  # -- Kyverno cluster policy configurations for disallow-latest-tag
+  disallow-latest-tag: {}
+  # -- Kyverno cluster policy configurations for restrict-image-registries
+  restrict-image-registries:
+    registries: []  # imageRegistry will be added to this list automatically
+  # -- Kyverno cluster policy configurations for require-request-limits
+  require-request-limits:
+    enforceCpuLimits: false  # set this to true to enforce setting cpu limits
+  # -- Kyverno cluster policy configurations for require-pod-probes
+  require-pod-probes: {}
+  # -- Kyverno cluster policy configurations for disallow-ingress-auth-skip
+  disallow-ingress-auth-skip: {}
+
+argocd:
+  # -- Disable ArgoCD related policies.
+  enabled: false
+  # -- Kyverno cluster policy configurations for applicationset-name-matches-project
+  applicationset-name-matches-project: {}
+  # -- Kyverno cluster policy configurations for application-field-validation
+  application-field-validation: {}
+  # -- Kyverno cluster policy configurations for application-prevent-default-project
+  application-prevent-default-project: {}
+  # -- Kyverno cluster policy configurations for application-prevent-app-of-apps-project
+  application-prevent-app-of-apps-project: {}
+  # -- Kyverno cluster policy configurations for application-prevent-updates-project
+  application-prevent-updates-project: {}
+
+# -- When this flag is set to false mutating policies will be disabled.
+enableMutators: true

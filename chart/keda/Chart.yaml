@@ -1,0 +1,11 @@
+apiVersion: v2
+name: keda
+description: "Wrapper chart for installing keda"
+version: 2.16.1
+maintainers:
+  - name: Cloud Engineering, Bhagya Kandage
+    email: bhagya.kandage@ifs.com
+dependencies:
+  - name: keda
+    version: 2.16.1
+    repository: https://kedacore.github.io/charts

@@ -1,0 +1,40 @@
+{{- /* # This could be done better using PolicyExceptions in kyverno 1.12.0 but right now it's a beta feature, and
+# kyverno 1.12.0 has a breaking bug that produces a race condition and produces invalid rejections randomly.
+# See: https://github.com/kyverno/kyverno/issues/10132 and https://github.com/kyverno/kyverno/pull/10139 */ -}}
+
+{{- $policyKeys := (dict) }}
+{{- $_ := set $policyKeys "HostProcess" "host-process" }}
+{{- $_ := set $policyKeys "Host Namespaces" "host-namespaces" }}
+{{- $_ := set $policyKeys "Privileged Containers" "privileged-containers" }}
+{{- $_ := set $policyKeys "Capabilities" "capabilities" }}
+{{- $_ := set $policyKeys "HostPath Volumes" "hostpath-volumes" }}
+{{- $_ := set $policyKeys "Host Ports" "host-ports" }}
+{{- $_ := set $policyKeys "AppArmor" "apparmor" }}
+{{- $_ := set $policyKeys "SELinux" "selinux" }}
+{{- $_ := set $policyKeys "/proc Mount Type" "proc-mount-type" }}
+{{- $_ := set $policyKeys "Seccomp" "seccomp" }}
+{{- $_ := set $policyKeys "Sysctls" "sysctls" }}
+{{- $_ := set $policyKeys "Volume Types" "volume-types" }}
+{{- $_ := set $policyKeys "Privilege Escalation" "privilege-escalation" }}
+{{- $_ := set $policyKeys "Running as Non-root" "running-as-non-root" }}
+{{- $_ := set $policyKeys "Running as Non-root user" "running-as-non-root-user" }}
+
+{{- $level := .Values.podSecurityStandards.level | default "baseline" }}
+
+{{- $podLevelControls := list "AppArmor" "Sysctls" "Host Namespaces" "HostPath Volumes" }}
+
+{{- $controls := list "HostProcess" "Host Namespaces" "Privileged Containers" "Capabilities" "HostPath Volumes" "Host Ports" "AppArmor" "SELinux" "/proc Mount Type" "Seccomp" "Sysctls" }}
+
+{{- if eq $level "restricted" }}
+{{- $controls := list "HostProcess" "Host Namespaces" "Privileged Containers" "Capabilities" "HostPath Volumes" "Host Ports" "AppArmor" "SELinux" "/proc Mount Type" "Seccomp" "Sysctls" "Volume Types" "Privilege Escalation" "Running as Non-root" "Running as Non-root user" }}
+{{- end }}
+
+{{- $pss := deepCopy .Values.podSecurityStandards }}
+{{- range $controls }}
+  {{- $_ := set $pss "controlName" . }}
+  {{- $_ := set $pss "policyKeys" $policyKeys }}
+  {{- $_ := set $pss "controls" $controls }}
+  {{- $_ := set $pss "level" $level }}
+  {{- $_ := set $pss "podLevelControls" $podLevelControls }}
+  {{- include "pod-security-rule" $pss }}
+{{- end}}

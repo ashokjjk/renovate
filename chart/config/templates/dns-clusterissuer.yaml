@@ -1,0 +1,22 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: dns-issuer
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"  # depends on nexus-acme-key
+spec:
+  acme:
+    server: {{ .Values.certmanager.acme.server }}
+    email: {{ .Values.certmanager.acme.email }}
+    disableAccountKeyGeneration: true
+    privateKeySecretRef:
+      name: nexus-acme-key
+    solvers:
+    - dns01:
+        azureDNS:
+          subscriptionID: {{ .Values.certmanager.acme.azureDNS.subscriptionID }}
+          resourceGroupName: {{ .Values.certmanager.acme.azureDNS.resourceGroupName }}
+          hostedZoneName: {{ .Values.certmanager.acme.azureDNS.hostedZoneName }}
+          managedIdentity:
+            clientID: {{ .Values.certmanager.acme.azureDNS.managedIdentity.clientID }}
+          environment: AzurePublicCloud

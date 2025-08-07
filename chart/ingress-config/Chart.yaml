@@ -1,0 +1,7 @@
+apiVersion: v1
+name: ingress-config
+version: 0.1.0
+maintainers:
+  - name: Cloud Engineering, Bhagya Kandage
+    email: bhagya.kandage@ifs.com
+description: Ingress configuration for the platform
