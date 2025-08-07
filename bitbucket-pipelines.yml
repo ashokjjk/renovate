@@ -1,0 +1,237 @@
+clone:
+  depth: full
+
+pipelines:
+  custom:
+    run-yamllint:
+      - step: &run-yamllint
+          name: Lint YAML files
+          image: cytopia/yamllint
+          script:
+            - set -e
+            - yamllint --strict --format colored .
+
+    run-helm-lint:
+      - step: &run-helm-lint
+          name: Run helm lint
+          image: alpine/k8s@sha256:d7a11b7032550e992667fd7725b039dcd639270fbceec368d7e66e3d9e41ee15 # 1.30.0
+          script:
+            - |
+              pushd chart
+                for chart in */ ; do
+                  pushd $chart
+                    helm lint .
+                  popd
+                done
+              popd
+
+    run-renovate:
+      - step: &run-renovate
+          name: Run Renovate
+          image: renovate/renovate:40
+          script:
+            - export LOG_LEVEL=debug RENOVATE_CONFIG_FILE="$BITBUCKET_CLONE_DIR/config.js"
+            - renovate
+
+    run-chart-testing:
+      - step: &run-chart-testing
+          name: Run chart-testing
+          image: quay.io/helmpack/chart-testing@sha256:676cc2137dabb74cff0c1862d9c065029e5fda764b30062a0d3fcce90fa4c390 # v3.11.0
+          script:
+            - |
+              pushd chart
+                for chart in */ ; do
+                  pushd $chart
+                    if [ ! -d templates ]; then
+                      echo "Skipping lint for $chart as it does not have a templates folder"
+                    else
+                      ct lint --chart-dirs . --charts . --config ../../ct.yaml
+                    fi                    
+                  popd
+                done
+              popd
+
+    merge-dev-deployment-pr:
+      - step: &merge-dev-deployment-pr
+          name: Rollout to dev
+          deployment: dev
+          image:
+            name: rnddockerdev.azurecr.io/ifs/nexus/deployment-pr:stable
+            username: $NEXUS_CI_RNDDOCKERDEV_ACR_UN
+            password: $NEXUS_CI_RNDDOCKERDEV_ACR_PWD
+          script:
+          - set -e
+          - pip install requests pyyaml
+          - export DEPLOYMENT_TARGET_CHOICE=dev
+          - if [ ! -f pr_details.json ]; then echo "pr_details.json not found"; exit 1; fi
+          - cat pr_details.json
+          - python /app/merge_pr.py $PR_ID $BB_API_ACCESS_TOKEN $DEPLOYMENT_TARGET_CHOICE
+    
+    create-dev-deployment-pr:
+      - step: &create-dev-deployment-pr
+          name: Create dev ring deployment PR
+          image:
+            name: rnddockerdev.azurecr.io/ifs/nexus/deployment-pr:stable
+            username: $NEXUS_CI_RNDDOCKERDEV_ACR_UN
+            password: $NEXUS_CI_RNDDOCKERDEV_ACR_PWD
+          script:
+            - set -e
+            - pip install requests pyyaml
+            - export DEPLOYMENT_TARGET_CHOICE=dev
+            - python /app/create_pr.py $COMMIT $CHART_VERSION $DEPLOYMENT_TARGET_CHOICE $BB_API_ACCESS_TOKEN $CI_BOT_USER_EMAIL $BITBUCKET_BUILD_NUMBER $BITBUCKET_REPO_SLUG | tee -a create_pr.log
+            - if [ ! -f pr_details.json ]; then echo "create_pr.py failed"; exit 1; fi
+            - cat pr_details.json
+          artifacts:
+            - create_pr.log
+            - pr_details.json
+
+    merge-test-deployment-pr:
+      - step: &merge-test-deployment-pr
+          name: Rollout to test
+          deployment: test
+          image:
+            name: rnddockerdev.azurecr.io/ifs/nexus/deployment-pr:stable
+            username: $NEXUS_CI_RNDDOCKERDEV_ACR_UN
+            password: $NEXUS_CI_RNDDOCKERDEV_ACR_PWD
+          script:
+          - set -e
+          - pip install requests pyyaml
+          - export DEPLOYMENT_TARGET_CHOICE=test
+          - if [ ! -f pr_details.json ]; then echo "pr_details.json not found"; exit 1; fi
+          - cat pr_details.json
+          - python /app/merge_pr.py $PR_ID $BB_API_ACCESS_TOKEN $DEPLOYMENT_TARGET_CHOICE
+
+    create-test-deployment-pr:
+      - step: &create-test-deployment-pr
+          name: Create test ring deployment PR
+          image:
+            name: rnddockerdev.azurecr.io/ifs/nexus/deployment-pr:stable
+            username: $NEXUS_CI_RNDDOCKERDEV_ACR_UN
+            password: $NEXUS_CI_RNDDOCKERDEV_ACR_PWD
+          script:
+            - set -e
+            - pip install requests pyyaml
+            - export DEPLOYMENT_TARGET_CHOICE=test
+            - python /app/create_pr.py $COMMIT $CHART_VERSION $DEPLOYMENT_TARGET_CHOICE $BB_API_ACCESS_TOKEN $CI_BOT_USER_EMAIL $BITBUCKET_BUILD_NUMBER $BITBUCKET_REPO_SLUG | tee -a create_pr.log
+            - if [ ! -f pr_details.json ]; then echo "create_pr.py failed"; exit 1; fi
+            - cat pr_details.json
+          artifacts:
+            - create_pr.log
+            - pr_details.json
+
+    merge-staging-deployment-pr:
+      - step: &merge-staging-deployment-pr
+          name: Rollout to staging
+          deployment: staging
+          image:
+            name: rnddockerdev.azurecr.io/ifs/nexus/deployment-pr:stable
+            username: $NEXUS_CI_RNDDOCKERDEV_ACR_UN
+            password: $NEXUS_CI_RNDDOCKERDEV_ACR_PWD
+          script:
+          - set -e
+          - pip install requests pyyaml
+          - export DEPLOYMENT_TARGET_CHOICE=staging
+          - if [ ! -f pr_details.json ]; then echo "pr_details.json not found"; exit 1; fi
+          - cat pr_details.json
+          - python /app/merge_pr.py $PR_ID $BB_API_ACCESS_TOKEN $DEPLOYMENT_TARGET_CHOICE
+
+    create-staging-deployment-pr:
+      - step: &create-staging-deployment-pr
+          name: Create staging ring deployment PR
+          image:
+            name: rnddockerdev.azurecr.io/ifs/nexus/deployment-pr:stable
+            username: $NEXUS_CI_RNDDOCKERDEV_ACR_UN
+            password: $NEXUS_CI_RNDDOCKERDEV_ACR_PWD
+          script:
+            - set -e
+            - pip install requests pyyaml
+            - export DEPLOYMENT_TARGET_CHOICE=staging
+            - python /app/create_pr.py $COMMIT $CHART_VERSION $DEPLOYMENT_TARGET_CHOICE $BB_API_ACCESS_TOKEN $CI_BOT_USER_EMAIL $BITBUCKET_BUILD_NUMBER $BITBUCKET_REPO_SLUG | tee -a create_pr.log
+            - if [ ! -f pr_details.json ]; then echo "create_pr.py failed"; exit 1; fi
+            - cat pr_details.json
+          artifacts:
+            - create_pr.log
+            - pr_details.json
+
+    merge-production-deployment-pr:
+      - step: &merge-production-deployment-pr
+          name: Rollout to production
+          deployment: production
+          image:
+            name: rnddockerdev.azurecr.io/ifs/nexus/deployment-pr:stable
+            username: $NEXUS_CI_RNDDOCKERDEV_ACR_UN
+            password: $NEXUS_CI_RNDDOCKERDEV_ACR_PWD
+          script:
+          - set -e
+          - pip install requests pyyaml
+          - export DEPLOYMENT_TARGET_CHOICE=production
+          - if [ ! -f pr_details.json ]; then echo "pr_details.json not found"; exit 1; fi
+          - cat pr_details.json
+          - python /app/merge_pr.py $PR_ID $BB_API_ACCESS_TOKEN $DEPLOYMENT_TARGET_CHOICE
+
+    create-production-deployment-pr:
+      - step: &create-production-deployment-pr
+          name: Create production ring deployment PR
+          image:
+            name: rnddockerdev.azurecr.io/ifs/nexus/deployment-pr:stable
+            username: $NEXUS_CI_RNDDOCKERDEV_ACR_UN
+            password: $NEXUS_CI_RNDDOCKERDEV_ACR_PWD
+          script:
+            - set -e
+            - pip install requests pyyaml
+            - export DEPLOYMENT_TARGET_CHOICE=production
+            - python /app/create_pr.py $COMMIT $CHART_VERSION $DEPLOYMENT_TARGET_CHOICE $BB_API_ACCESS_TOKEN $CI_BOT_USER_EMAIL $BITBUCKET_BUILD_NUMBER $BITBUCKET_REPO_SLUG | tee -a create_pr.log
+            - if [ ! -f pr_details.json ]; then echo "create_pr.py failed"; exit 1; fi
+            - cat pr_details.json
+          artifacts:
+            - create_pr.log
+            - pr_details.json
+
+    rollout:
+      - step:
+          name: Initiate rollout
+          script:
+          - if [[ -z "${CHART_NAME}" ]] || [[ -z "${CHART_VERSION}" ]] || [[ -z "${COMMIT}" ]] || [[ -z "${BITBUCKET_BUILD_NUMBER}" ]]; then
+          -   echo "missing one of required parameters CHART_NAME, CHART_VERSION, COMMIT, BITBUCKET_BUILD_NUMBER"
+          -   exit 1
+          - fi
+          - echo "Initiating rollout of version ${CHART_VERSION} of bundle ${CHART_NAME} (git revision ${COMMIT}) using Bitbucket Pipeline ${BITBUCKET_BUILD_NUMBER}..."
+      - step:
+          <<: *create-dev-deployment-pr
+          trigger: manual
+      - step:
+          <<: *merge-dev-deployment-pr
+          trigger: manual
+      - step:
+          <<: *create-test-deployment-pr
+          trigger: manual
+      - step:
+          <<: *merge-test-deployment-pr
+          trigger: manual
+      - step:
+          <<: *create-staging-deployment-pr
+          trigger: manual
+      - step:
+          <<: *merge-staging-deployment-pr
+          trigger: manual
+      - step:
+          <<: *create-production-deployment-pr
+          trigger: manual
+      - step:
+          <<: *merge-production-deployment-pr
+          trigger: manual
+
+  default: &default-pipeline
+    - parallel: &default-pipeline-steps
+        - step: *run-yamllint
+        - step: *run-helm-lint
+        - step: *run-chart-testing
+
+  branches:
+    main:
+      - parallel: *default-pipeline-steps
+      - step: *run-renovate
+    'release/*': *default-pipeline
+
+  pull-requests:
+    "**": *default-pipeline

@@ -1,6 +1,7 @@
 apiVersion: v2
 name: keda
 description: "Wrapper chart for installing keda"
+# renovate: datasource=helm depName=keda registryUrl=https://kedacore.github.io/charts
 version: 2.16.1
 maintainers:
   - name: Cloud Engineering, Bhagya Kandage

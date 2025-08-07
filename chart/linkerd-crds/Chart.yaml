@@ -1,6 +1,7 @@
 apiVersion: v2
 name: linkerd-crds
 description: "Wrapper chart for installing linkerd-crds"
+# renovate: datasource=helm depName=linkerd-crds registryUrl=https://helm.linkerd.io/stable
 version: 1.8.0
 maintainers:
   - name: Cloud Engineering, Bhagya Kandage
