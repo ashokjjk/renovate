@@ -1,3 +1,3 @@
 #1.35
 # FROM busybox@sha256:98ad9d1a2be345201bb0709b0d38655eb1b370145c7d94ca1fe9c421f76e245a
-FROM busybox:1.35
+FROM busybox:1.37@sha256:f9a104fddb33220ec80fc45a4e606c74aadf1ef7a3832eb0b05be9e90cd61f5f
