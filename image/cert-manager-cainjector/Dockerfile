@@ -1,2 +1,3 @@
 #v1.15.5
-FROM quay.io/jetstack/cert-manager-cainjector@sha256:c5aa60ffa212dc198c2ee5138dd58922b4e273edd3c174bb7b889d8dc300f3af
+# FROM quay.io/jetstack/cert-manager-cainjector@sha256:c5aa60ffa212dc198c2ee5138dd58922b4e273edd3c174bb7b889d8dc300f3af
+FROM quay.io/jetstack/cert-manager-cainjector:v1.15.5

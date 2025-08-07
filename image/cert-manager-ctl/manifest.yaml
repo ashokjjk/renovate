@@ -1,2 +1,2 @@
 destination_repo: nexus/cert-manager-ctl
-version: v1.15.0
+version: v1.14.7
