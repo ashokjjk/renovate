@@ -1,3 +1,3 @@
 #1.30.7
 # FROM docker.io/bitnami/kubectl@sha256:1249fc292e84a38575ee0cadc3e28dcd7ddf5a3a4e5da401b1a8599e8ac52a1b
-FROM docker.io/bitnami/kubectl:1.30.7
+FROM docker.io/bitnami/kubectl:1.30.7@sha256:1249fc292e84a38575ee0cadc3e28dcd7ddf5a3a4e5da401b1a8599e8ac52a1b
