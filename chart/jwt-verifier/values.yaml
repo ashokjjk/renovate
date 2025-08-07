@@ -1,0 +1,77 @@
+image:
+  repository: xxx.azurecr.io/nexus
+  tag: 0.0.10
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 50Mi
+  requests:
+    cpu: 100m
+    memory: 50Mi
+
+
+authResolverImageRegistry: "nxsdvlglb01acr.azurecr.io"
+authResolver:
+  enabled: true
+  image:
+    repository: "ifs-pd/ifs-technology-security-nexus-auth-resolver/image"
+    tag: "v0.0.3"
+    pullPolicy: "Always"
+  runtime: "production"
+  metrics:
+    port: 9095
+    path: /metrics
+  url: "http://localhost:8085"
+  resources:
+    limits:
+      cpu: 200m
+      memory: 100M
+    requests:
+      cpu: 50m
+      memory: 100M
+
+autoscaling:
+  enabled: false
+  minReplicas: 3
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 90
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 90
+
+replicaCount: 3
+
+affinity:
+  podAntiAffinity:
+    # Set to preferredDuringSchedulingIgnoredDuringExecution when using autoscaling.
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app
+          operator: In
+          values:
+          - jwtverifier
+      topologyKey: "kubernetes.io/hostname"
+
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+serviceMonitor:
+  labels:
+    release: monitoring

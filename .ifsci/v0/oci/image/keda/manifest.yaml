@@ -1,0 +1,2 @@
+type: docker_image
+repository: "file://../../../../../image/keda"

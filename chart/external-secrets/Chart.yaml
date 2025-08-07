@@ -1,0 +1,11 @@
+apiVersion: v2
+name: external-secrets
+description: "Wrapper chart for installing external-secrets"
+version: 0.15.1
+maintainers:
+  - name: Cloud Engineering, Bhagya Kandage
+    email: bhagya.kandage@ifs.com
+dependencies:
+  - name: external-secrets
+    version: 0.15.1
+    repository: https://charts.external-secrets.io

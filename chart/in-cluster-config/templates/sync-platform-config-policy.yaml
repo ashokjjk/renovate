@@ -1,0 +1,83 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: sync-platform-config
+  annotations:
+    argocd.argoproj.io/sync-options: Replace=true
+spec:
+  rules:
+  - name: sync-config
+    match:
+      any:
+      - resources:
+          kinds:
+          - Namespace    
+    {{- if .Values.platformConfigNamespaces}}
+          namespaces:
+            {{- range $index, $element := .Values.platformConfigNamespaces}}
+              - {{ $element }}
+            {{- end}}
+    {{- end}}
+    exclude:
+      any:
+      - resources:
+          namespaces:
+          - kube-system
+          - default
+          - kube-public
+          - kube-node-lease
+          - linkerd
+          - ingress
+          - external-secrets
+          - keda
+          - kyverno
+          - secret-values
+          - trivy-system
+          - argocd
+          - cert-manager
+          - platform
+    generate:
+      apiVersion: v1
+      kind: ConfigMap
+      name: global-config
+      namespace: "{{ "{{ request.object.metadata.name }}" }}"
+      synchronize: true
+      clone:
+        namespace: platform
+        name: global-config
+  - name: remove-argocd-label
+    match:
+      any:
+      - resources:
+          kinds:
+          - ConfigMap
+          names:
+          - global-config 
+    {{- if .Values.platformConfigNamespaces}}
+          namespaces:
+            {{- range $index, $element := .Values.platformConfigNamespaces}}
+              - {{ $element }}
+            {{- end}}
+    {{- end}}
+    exclude:
+      any:
+      - resources:
+          namespaces:
+          - kube-system
+          - default
+          - kube-public
+          - kube-node-lease
+          - linkerd
+          - ingress
+          - external-secrets
+          - keda
+          - kyverno
+          - secret-values
+          - trivy-system
+          - argocd
+          - cert-manager
+          - platform
+    mutate:
+      patchesJson6902: |-
+        - op: remove
+          path: /metadata/labels/argocd.argoproj.io~1instance

@@ -1,0 +1,42 @@
+{{- $settings := index (.Values.general | default (dict)) "restrict-image-registries" | default (dict) }}
+{{- $_ := set $settings "registries" (append ($settings.registries | default (list)) .Values.imageRegistry)}}
+{{- if or $settings.enabled (and (not (hasKey $settings "enabled")) .Values.default.enabled) }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-image-registries
+spec:
+  validationFailureAction: {{ default .Values.default.validationFailureAction $settings.validationFailureAction }}
+  failurePolicy: {{ default .Values.default.failurePolicy $settings.failurePolicy }}
+  admission: {{ default .Values.default.admission $settings.admission }}
+  background: {{ default .Values.default.background $settings.background }}
+  rules:
+    - name: validate-registries
+      skipBackgroundRequests: true
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      {{- include "exclusions" $settings | nindent 6 }}
+      preconditions:
+        all:
+          - key: "{{ "{{ request.operation || 'BACKGROUND' }}" }}"
+            operator: NotEquals
+            value: DELETE
+      validate:
+        allowExistingViolations: true
+        message: "Images can only be pulled from the approved registry."
+        foreach:
+        - list: "request.object.spec.containers"
+          anyPattern:
+            {{- range $settings.registries }}
+            - image: "{{ . }}/*"
+            {{- end }}
+        - list: "request.object.spec.initContainers"
+          anyPattern:
+            {{- range $settings.registries }}
+            - image: "{{ . }}/*"
+            {{- end }}
+{{- end }}
+

@@ -1,0 +1,15 @@
+{{- if .Values.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: health-pdb
+spec:
+  {{- if .Values.pdb.minAvailable }}
+  minAvailable: {{ .Values.pdb.minAvailable }}
+  {{- else}}
+  maxUnavailable: {{ .Values.pdb.maxUnavailable | required "maxUnavailable is required when minAvailable is not set" }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app: health
+{{- end}}

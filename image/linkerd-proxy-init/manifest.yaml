@@ -1,0 +1,2 @@
+destination_repo: nexus/linkerd/proxy-init
+version: v2.4.1

@@ -1,2 +1,2 @@
 #v1.15.0
-FROM quay.io/jetstack/cert-manager-ctl@sha256:v1.15.0
+FROM quay.io/jetstack/cert-manager-ctl@sha256:89c0bf046855c4495917b6b0206be8033ca6276db64da53728352366c6461e03

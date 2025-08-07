@@ -1,0 +1,2 @@
+#v1.13.4
+FROM ghcr.io/kyverno/cleanup-controller@sha256:8cb9ce52428611b49036e937ad4ea70c0d2b2b3a8fb5df0a6c958a398f2f8dd8

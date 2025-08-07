@@ -1,0 +1,42 @@
+{{- $settings := index (.Values.general | default (dict)) "disallow-other-priorityclasses" | default (dict) }}
+{{- if or $settings.enabled (and (not (hasKey $settings "enabled")) .Values.default.enabled) }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-other-priorityclasses
+  annotations:
+    policies.kyverno.io/title: Disallow Other PriorityClasses Creation
+    policies.kyverno.io/category: Governance
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: PriorityClass
+    policies.kyverno.io/description: >-
+      This policy ensures that no new PriorityClasses are created apart from those
+      already defined.
+spec:
+  validationFailureAction: {{ default .Values.default.validationFailureAction $settings.validationFailureAction }}
+  failurePolicy: {{ default .Values.default.failurePolicy $settings.failurePolicy }}
+  admission: {{ default .Values.default.admission $settings.admission }}
+  background: {{ default .Values.default.background $settings.background }}
+  rules:
+    - name: restrict-new-priority-classes
+      skipBackgroundRequests: true
+      match:
+        any:
+          - resources:
+              kinds:
+                - PriorityClass
+      preconditions:
+        all:
+          - key: "{{"{{ request.object.metadata.name }}"}}"
+            operator: NotIn
+            value: 
+              {{- $default := list "ifs-global-default" "ifs-services-high" "ifs-infra-cluster-critical" "ifs-services-node-critical" "ifs-infra-node-critical" }}
+              {{- $extra:= $settings.extraPriorityClasses | default list }}
+              {{- toYaml (uniq (concat $default $extra)) | nindent 14 }}
+      validate:
+        allowExistingViolations: true
+        message: "Creating new PriorityClasses is not allowed. Only the predefined PriorityClasses are permitted."
+        pattern:
+          metadata:
+            name: "DISALLOWED"
+{{- end}}

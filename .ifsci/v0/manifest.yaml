@@ -1,0 +1,89 @@
+bundle:
+  repository: "file://../../chart/bundle"
+
+reviewers:
+  - name: ananya.shrivastava@ifs.com
+    uuid: 2c4f7839-e349-4b08-9f9f-1e336388637c
+  - name: thushara.amarasinghe@ifs.com
+    uuid: d073281b-4ad4-408a-9e47-9b560663da0e
+  - name: soumadeep.bhattacharya@ifs.com
+    uuid: cec2e925-54ee-4f71-b436-e72d2d3817d9
+
+rollout:
+  stages:
+    nexus-gitops-dev:
+      bitbucket_repo: ifs-pd/nexus-gitops-devtst
+      stage: dev
+      application_set: platform-core
+    nexus-gitops-test:
+      bitbucket_repo: ifs-pd/nexus-gitops-devtst
+      stage: tst
+      application_set: platform-core
+    nexus-gitops-staging:
+      bitbucket_repo: ifs-pd/nexus-gitops
+      stage: stg
+      application_set: platform-core
+
+  deployment_targets:
+    dev:
+      rings:
+        - stage: nexus-gitops-dev
+          ring: adm
+        - stage: nexus-gitops-dev
+          ring: ale
+        - stage: nexus-gitops-dev
+          ring: cin
+        - stage: nexus-gitops-dev
+          ring: control-plane
+        - stage: nexus-gitops-dev
+          ring: data-services
+        - stage: nexus-gitops-dev
+          ring: mlsrv
+        - stage: nexus-gitops-dev
+          ring: one
+        - stage: nexus-gitops-dev
+          ring: prov-mgt
+        - stage: nexus-gitops-dev
+          ring: spo
+        - stage: nexus-gitops-dev
+          ring: testring
+        - stage: nexus-gitops-dev
+          ring: two
+        - stage: nexus-gitops-dev
+          ring: rgn
+      reviewers:
+        - thushara.amarasinghe@ifs.com
+        - ananya.shrivastava@ifs.com
+        - soumadeep.bhattacharya@ifs.com
+    test:
+      rings:
+        - stage: nexus-gitops-test
+          ring: adm
+        - stage: nexus-gitops-test
+          ring: control-plane
+        - stage: nexus-gitops-test
+          ring: one
+        - stage: nexus-gitops-test
+          ring: two
+        - stage: nexus-gitops-test
+          ring: rgn
+      reviewers:
+        - thushara.amarasinghe@ifs.com
+        - ananya.shrivastava@ifs.com
+        - soumadeep.bhattacharya@ifs.com
+    staging:
+      rings:
+        - stage: nexus-gitops-staging
+          ring: adm
+        - stage: nexus-gitops-staging
+          ring: control-plane
+        - stage: nexus-gitops-staging
+          ring: one
+        - stage: nexus-gitops-staging
+          ring: two
+        - stage: nexus-gitops-staging
+          ring: rgn
+      reviewers:
+        - thushara.amarasinghe@ifs.com
+        - ananya.shrivastava@ifs.com
+        - soumadeep.bhattacharya@ifs.com

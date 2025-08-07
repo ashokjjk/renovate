@@ -1,0 +1,59 @@
+imageRegistry: xxxx.azurecr.io
+
+ingress:
+  host: localhost
+
+imageVersion: 0.1.3
+
+imagePath: ifs-pd/nexus-platform-core/image/health
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 10Mi
+  limits:
+    cpu: 10m
+    memory: 10Mi
+
+logLevel: error
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: app
+              operator: In
+              values:
+                - health
+          topologyKey: kubernetes.io/hostname
+replicas: 1
+
+pdb:
+  enabled: true
+  minAvailable: 1
+
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: ScheduleAnyway
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 3
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 90
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 90

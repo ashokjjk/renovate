@@ -1,0 +1,7 @@
+---
+apiVersion: v2
+name: jwt-verifier
+maintainers:
+  - name: SPO, Markus Sandin
+    email: markus.sandin@ifs.com
+version: 0.0.19

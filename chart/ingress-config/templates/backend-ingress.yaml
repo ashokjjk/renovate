@@ -1,0 +1,30 @@
+# this ingress is required because of this bugs:
+# https://github.com/kubernetes/ingress-nginx/issues/9054
+# https://github.com/kubernetes/ingress-nginx/issues/9485
+# It will be the first ingress created in the cluster and the default backend will inherit annotations from it.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: default-backend
+  namespace: ingress
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/service-upstream: "true"
+    ifs.auth.jwt/skip: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - '{{ .Values.ingress.host }}'
+    secretName: ""
+  rules:
+  - host: {{ .Values.ingress.host }}
+    http:
+      paths:
+      - backend:
+          service:
+            name: ingress-ingress-nginx-defaultbackend
+            port:
+              number: 8080
+        path: /404
+        pathType: Exact

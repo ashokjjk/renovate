@@ -1,0 +1,37 @@
+{{- $settings := index (.Values.general | default (dict)) "disallow-ingress-auth-skip" | default (dict) }}
+{{- if or $settings.enabled (and (not (hasKey $settings "enabled")) .Values.default.enabled) }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-ingress-auth-skip
+  annotations:
+    general.kyverno.io/description: >-
+      Ingress resources must not have the 'ifs.auth.jwt/skip: "true"' annotation.
+spec:
+  validationFailureAction: {{ default .Values.default.validationFailureAction $settings.validationFailureAction }}
+  failurePolicy: {{ default .Values.default.failurePolicy $settings.failurePolicy }}
+  admission: {{ default .Values.default.admission $settings.admission }}
+  background: {{ default .Values.default.background $settings.background }}
+  rules:
+    - name: disallow-ingress-auth-skip-annotation
+      skipBackgroundRequests: true
+      match:
+        any:
+          - resources:
+              kinds:
+                - Ingress
+      {{- include "exclusions" $settings | nindent 6 }}
+      preconditions:
+        all:
+          - key: "{{ "{{ request.operation || 'BACKGROUND' }}" }}"
+            operator: NotEquals
+            value: DELETE
+      validate:
+        allowExistingViolations: true
+        message: "Ingress resources must not have the 'ifs.auth.jwt/skip: \"true\"' annotation."
+        deny:
+          conditions:
+            - key: "{{ "{{ request.object.metadata.annotations.\\\"ifs.auth.jwt/skip\\\" || '' }}" }}"
+              operator: Equals
+              value: "true"
+{{- end}}

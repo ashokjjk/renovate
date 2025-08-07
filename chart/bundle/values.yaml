@@ -1,0 +1,944 @@
+# -- The cluster name for ArgoCD
+clusterName: cluster
+# -- The destination K8s API server endpoint for ArgoCD
+destinationServer: https://kubernetes.default.svc
+
+# -- The image registry hostname
+imageRegistry: xxx.azurecr.io
+# -- The image repository
+imageRepository: xxx.azurecr.io
+
+# -- The access token issuer URL for JWT verifier
+# This is used by the JWT Verifier as well as application APIs to validate access token issuer.
+accessTokenIssuer: xxx
+# -- The JWKS URL for JWT verifier
+jwksUrl: https://login.microsoftonline.com/common/discovery/keys
+# -- The stage for JWT verifier
+stage: dev
+
+# -- [JWT provider Helm chart values](../../../authentication/jwk-provider/chart)
+# @default -- A subset of values are overridden for JWT provider Helm chart under the key `jwk-provider`
+jwk-provider:
+  enabled: false
+  externalKeys:
+    enabled: false
+    # Audience validation regexp will be set to "^api://{{ .Values.stage }}.[^\\.]+.ifs.cloud$" is not set.
+    # audienceValidationRegex: "^api://dev.[^\\.]+.ifs.cloud$""
+    tenantId: 00000000-0000-0000-0000-000000000000
+    allowedAzureUsers: []
+    allowedAzureGroups: []
+  rsaKey:
+    mount: true
+    generate: false
+    secretName: jwk-provider-rsa-key
+    mountPath: /var/jwk-provider/rsa
+    secretKey: sig.pem
+
+azVault:
+  # -- URL Of Azure Key vault for cluster secret stores for External secrets
+  vaultUrl:
+  # -- The client ID of the workload identity for External secrets
+  workloadIdentityClientId: xxx
+
+# -- Whether to install the in cluster configuration
+inClusterConfiguration: false
+# -- Whether the cluster is running on a local machine
+localCluster: false
+
+# -- [Ingress Nginx Helm chart values](../../../external-charts/ingress/ingress-nginx.md#values)
+# @default -- A subset of values are overridden for Ingress Nginx Helm chart under the key `ingress`
+ingress:
+  host: localhost
+  controller:
+    addHeaders:
+      Strict-Transport-Security: "max-age=31536000; includeSubDomains"
+      X-Frame-Options: "DENY"
+      X-Content-Type-Options: "nosniff"
+      X-XSS-Protection: "1; mode=block"
+      Referrer-Policy: "same-origin"
+    resources:
+      requests:
+        cpu: 100m
+        memory: 600Mi
+      limits:
+        cpu: 2
+        memory: 600Mi
+    readOnlyRootFilesystem: true
+    podAnnotations:
+      config.linkerd.io/proxy-await: enabled
+      config.alpha.linkerd.io/proxy-wait-before-exit-seconds: 300  # 5 minutes like the terminationGracePeriodSeconds
+    terminationGracePeriodSeconds: 290  # almost 5 minutes (preStop will wait for graceful shutdown)
+    lifecycle:
+      preStop:
+        exec:
+          command: ["/bin/sh", "-c", "/wait-shutdown;curl -s -X POST http://localhost:4191/shutdown"]
+    service:
+      annotations:
+        service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: "/healthz"
+    admissionWebhooks:
+      enabled: true
+    # kind: DaemonSet
+    # It is recommended to use a DaemonSet for the ingress controller but we could use
+    # a Deployment instead and that would allow for setting the disruption budget.
+    kind: Deployment
+    replicaCount: 3
+    minAvailable: 1
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+    affinity:
+      podAntiAffinity:
+        # use preferredDuringSchedulingIgnoredDuringExecution if using autoscaling
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - ingress-nginx
+            - key: app.kubernetes.io/instance
+              operator: In
+              values:
+              - ingress
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - controller
+          topologyKey: "kubernetes.io/hostname"
+    nodeSelector:
+      kubernetes.io/os: linux
+    extraArgs:
+      enable-ssl-passthrough: ""
+      default-ssl-certificate: "ingress/ingress-default-cert"
+      disable-catch-all: ""
+    publishService:
+      enabled: true
+    config:
+      ssl-protocols: "TLSv1.2 TLSv1.3"
+      # enable-modsecurity: true
+      # enable-owasp-modsecurity-crs: true
+      # modsecurity-snippet: |
+      #   SecRuleEngine On
+      #   SecRequestBodyAccess On
+      #   SecAuditLog /dev/stdout
+      #   SecAuditLogFormat JSON
+      #   SecAuditEngine RelevantOnly
+      log-format-escape-json: "true"
+      log-format-upstream: '{"_timestamp": "$time_iso8601", "requestID": "$req_id", "azureRef": "$http_x_azure_ref", "proxyUpstreamName": "$proxy_upstream_name", "proxyAlternativeUpstreamName": "$proxy_alternative_upstream_name","upstreamStatus": "$upstream_status", "upstreamAddr": "$upstream_addr","httpRequest":{"requestMethod": "$request_method", "host.name": "$host", "port": "$server_port", "requestUri": "$request_uri", "status": $status,"requestSize": "$request_length", "responseSize": "$upstream_response_length", "userAgent": "$http_user_agent", "ip": "$remote_addr", "referer": "$http_referer", "latency": "$upstream_response_time", "protocol":"$server_protocol"}}'
+      ssl_ciphers: "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"
+      ssl_prefer_server_ciphers: "on"
+      custom-http-errors: "400,401,402,403,404,405,406,407,408,409,410,411,412,413,414,415,416,417,418,421,422,423,424,425,426,428,429,431,451,497,500,501,502,503,504,505,506,507,508,510,511"
+      disable-proxy-intercept-errors: "true"
+      force-ssl-redirect: "true"
+    metrics:
+      port: 10254
+      enabled: true
+      service:
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "10254"
+          prometheus.io/path: /metrics
+  defaultBackend:
+    enabled: true
+    replicaCount: 3
+    minAvailable: 1
+    resources:
+      limits:
+        cpu: 200m
+        memory: 50Mi
+      requests:
+        cpu: 10m
+        memory: 50Mi
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+    affinity:
+      podAntiAffinity:
+        # use preferredDuringSchedulingIgnoredDuringExecution if using autoscaling
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - ingress-nginx
+            - key: app.kubernetes.io/instance
+              operator: In
+              values:
+              - ingress
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - default-backend
+          topologyKey: "kubernetes.io/hostname"
+
+# -- [Cert manager Helm chart values](../../../external-charts/certmanager/cert-manager.md#values)
+# point to an acme server (if other than Let's encrypt acme server is required we need to add support for the additional credentials)
+# @default -- A subset of values are overridden for Cert manager Helm chart under the key `cert-manager`
+cert-manager:
+  replicaCount: 2
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - cert-manager
+          - key: app.kubernetes.io/component
+            operator: In
+            values:
+            - controller
+        topologyKey: "kubernetes.io/hostname"
+  resources:
+    limits:
+      memory: 100Mi
+      cpu: 500m
+    requests:
+      cpu: 50m
+      memory: 100Mi
+  webhook:
+    replicaCount: 3
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                - cert-manager
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                - webhook
+          topologyKey: "kubernetes.io/hostname"
+    resources:
+      limits:
+        memory: 64Mi
+        cpu: 500m
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  cainjector:
+    replicaCount: 2
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                - cert-manager
+              - key: app.kubernetes.io/component
+                operator: In
+                values:
+                - cainjector
+          topologyKey: "kubernetes.io/hostname"
+    resources:
+      limits:
+        memory: 200Mi
+        cpu: 500m
+      requests:
+        cpu: 10m
+        memory: 200Mi
+  startupapicheck:
+    resources:
+      limits:
+        cpu: 100m
+        memory: 100Mi
+      requests:
+        cpu: 25m
+        memory: 100Mi
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory  # used for testing
+    # server: https://acme-v02.api.letsencrypt.org/directory  # used in prod
+    email: info@ifs.com
+    azureDNS:
+      subscriptionID: not-set
+      resourceGroupName: not-set
+      hostedZoneName: not-set
+      managedIdentity:
+        clientID: not-set
+
+argocd:
+  retry:
+    # -- Number of failed sync attempt retries; unlimited number of attempts if less than 0
+    limit: 10
+    backoff:
+      # -- The amount to back off. Default unit is seconds, but could also be a duration (e.g. "2m", "1h")
+      duration: 5s
+      # -- A factor to multiply the base duration after each failed retry
+      factor: 2
+      # -- The maximum amount of time allowed for the backoff strategy
+      maxDuration: 2m
+
+# -- [JWT verifier Helm chart values](../../../authentication/jwt-verifier)
+# @default -- A subset of values are overridden for JWT verifier Helm chart under the key `jwt-verifier`
+jwt-verifier:
+  logLevel: warn
+  pullPolicy: IfNotPresent
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 5
+  affinity:
+    podAntiAffinity:
+      # Using soft because of auto scaling.
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - jwtverifier
+            topologyKey: "kubernetes.io/hostname"
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+
+# -- [Kyverno Helm chart values](../../../external-charts/kyverno/kyverno.md#values)
+# @default -- A subset of values are overridden for Kyverno Helm chart under the key `kyverno`
+kyverno:
+  # Kyverno chart configuration
+  chart:
+    features:
+      logging:
+        format: json
+    config:
+      enableDefaultRegistryMutation: false
+      webhooks:
+        - namespaceSelector:
+            matchExpressions:
+            - key: kubernetes.io/metadata.name
+              operator: NotIn
+              values:
+                - kube-system
+                - kube-node-lease
+                - kube-public
+                - gatekeeper-system
+      webhookAnnotations:
+        'admissions.enforcer/disabled': 'true'  # disable the admission webhook for the Kyverno policies
+    admissionController:
+      initContainer:
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 128Mi
+      container:
+        resources:
+          limits:
+            cpu: 500m
+            memory: 384Mi
+          requests:
+            cpu: 100m
+            memory: 384Mi
+      antiAffinity:
+        enabled: true
+      podDisruptionBudget:
+        enabled: true
+        minAvailable: 1
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+      replicas: 3
+      resources:
+        limits:
+          cpu: 500m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+    cleanupController:
+      antiAffinity:
+        enabled: true
+      podDisruptionBudget:
+        enabled: true
+        minAvailable: 1
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+      replicas: 2
+      resources:
+        limits:
+          cpu: 500m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+    reportsController:
+      antiAffinity:
+        enabled: true
+      podDisruptionBudget:
+        enabled: true
+        minAvailable: 1
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+      replicas: 2
+      resources:
+        limits:
+          cpu: 500m
+          memory: 200Mi
+        requests:
+          cpu: 100m
+          memory: 200Mi
+    backgroundController:
+      antiAffinity:
+        enabled: true
+      podDisruptionBudget:
+        enabled: true
+        minAvailable: 1
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+      replicas: 2
+      resources:
+        limits:
+          cpu: 500m
+          memory: 128Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+
+  # Kyverno pod security standards configuration
+  policies:
+    podSecurityStandards:
+      enabled: true
+      validationFailureAction: Enforce
+      failurePolicy: Fail
+      admission: true
+      background: false
+      exclusions:
+        capabilities:
+          platform:
+            match:
+              any:
+                - resources:
+                    kinds:
+                      - Deployment
+                      - ReplicaSet
+                      - Pod
+                    namespaces:
+                      - linkerd
+                - resources:
+                    kinds:
+                      - Pod
+                    names:
+                      - cert-manager-startupapicheck-*
+                      - external-secrets-*
+                      - ingress-ingress-nginx-controller-*
+                    namespaces:
+                      - cert-manager
+                      - external-secrets
+                      - ingress
+            images:
+              - "*/ifs-pd/nexus-platform-core/image/linkerd-proxy-init*"
+        host-namespaces:
+          platform:
+            match:
+              any:
+                - resources:
+                    kinds:
+                      - Job
+                      - Pod
+                    namespaces:
+                      - trivy-system
+        host-path-volumes:
+          platform:
+            match:
+              any:
+                - resources:
+                    kinds:
+                      - Job
+                      - Pod
+                    namespaces:
+                      - trivy-system
+
+    default:
+      admission: true
+      background: false
+      validationFailureAction: Enforce
+      failurePolicy: Fail
+      enabled: true
+    # general policies
+    general:
+      disallow-ingress-auth-skip:
+        exclusions:
+          platform:
+            match:
+              any:
+                - resources:
+                    namespaces: ["argocd"]
+                - resources:
+                    names: ["default-backend"]
+                    namespaces: ["ingress"]
+                - resources:
+                    names: ["health-ping"]
+                    namespaces: ["platform"]
+      check-ingress-annotation:
+        exclusions:
+          platform:
+            match:
+              any:
+                - resources:
+                    namespaces: ["argocd"]
+      check-limits-requests:
+        maxAllowedCpu: null  # set this in order to validate that the cpu limit is not higher than this value
+      disallow-default-namespace: {}
+      disallow-latest-tag: {}
+      restrict-image-registries:
+        registries:
+          - xxx.azurecr.io
+      require-pod-probes:
+        exclusions:
+          platform:
+            match:
+              any:
+                - resources:
+                    kinds:
+                      - Pod
+                    names:
+                      - cert-manager-startupapicheck-*
+                      - cert-manager-cainjector-*
+                      - cert-manager-webhook-*
+                      - cert-manager-*
+                    namespaces:
+                      - cert-manager
+                - resources:
+                    kinds:
+                      - Pod
+                    names:
+                      - external-secrets-*
+                      - linkerd-heartbeat-*
+                      - node-collector-*
+                      - scan-vulnerabilityreport-*
+                      - ingress-ingress-nginx-admission-create-*
+                      - argocd-notifications-controller-*
+                      - argocd-applicationset-controller-*
+                      - argocd-redis-ha-server-*
+                      - argocd-redis-*
+                      - argocd-init-*
+                      - argocd-bootstrap-redis-secret-init-*
+                    namespaces:
+                      - external-secrets
+                      - linkerd
+                      - trivy-system
+                      - ingress
+                      - argocd
+
+# -- [Linkerd control plane Helm chart values](../../../external-charts/linkerd/linkerd-control-plane.md#values)
+# @default -- A subset of values are overridden for Linkerd control plane Helm chart under the key `linkerd`
+linkerd:
+  enablePodAntiAffinity: true
+  enablePodDisruptionBudget: true
+  controllerReplicas: 3
+  controllerLogFormat: json
+
+  controllerResources: &controller_resources
+    cpu: &controller_resources_cpu
+      limit: "1"
+      request: 100m
+    memory:
+      limit: 250Mi
+      request: 250Mi
+  destinationResources: *controller_resources
+  publicAPIResources: *controller_resources
+  heartbeatResources: *controller_resources
+  proxyInjectorResources: *controller_resources
+  spValidatorResources: *controller_resources
+  identityResources:
+    cpu: *controller_resources_cpu
+    memory:
+      limit: 250Mi
+      request: 250Mi
+  policyController:
+    resources: *controller_resources
+  proxyInit:
+    logFormat: json
+    resources:
+      cpu:
+        limit: 100m
+        request: 100m
+      memory:
+        limit: 20Mi
+        request: 20Mi
+  cores: 1
+  # proxy configuration
+  proxy:
+    logFormat: json
+    resources:
+      cpu:
+        limit: "1"
+        request: 100m
+      memory:
+        limit: 250Mi
+        request: 250Mi
+
+# -- [Keda Helm chart values](../../../external-charts/keda/keda.md#values)
+# @default -- A subset of values are overridden for Keda Helm chart under the key `keda`
+keda:
+  logging:
+    operator:
+      level: info
+      format: json
+      timeEncoding: iso8601
+    webhooks:
+      level: info
+      format: json
+      timeEncoding: iso8601
+  operator:
+    replicaCount: 2
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/part-of
+              operator: In
+              values:
+              - keda-operator
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - keda-operator
+          topologyKey: "kubernetes.io/hostname"
+  webhooks:
+    replicaCount: 2
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/part-of
+              operator: In
+              values:
+              - keda-operator
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - keda-admission-webhooks
+          topologyKey: "kubernetes.io/hostname"
+  metricsServer:
+    replicaCount: 2
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/part-of
+              operator: In
+              values:
+              - keda-operator
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - keda-operator-metrics-apiserver
+          topologyKey: "kubernetes.io/hostname"
+  podDisruptionBudget:
+    operator:
+      minAvailable: 1
+    metricServer:
+      minAvailable: 1
+    webhooks:
+      minAvailable: 1
+  topologySpreadConstraints:
+    operator:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+    metricServer:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/instance: keda
+            app.kubernetes.io/name: keda-operator-metrics-apiserver
+            app.kubernetes.io/version: 2.11.2
+    webhooks:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/instance: keda
+            app.kubernetes.io/name: keda-admission-webhooks
+            app.kubernetes.io/version: 2.11.2
+  resources:
+    # Keda resources request 100M and set a limit of 1Gi on their charts, that seems like a lot.
+    # We need to review these limits and requests.
+    operator:
+      limits:
+        cpu: 2
+        memory: 400Mi
+      requests:
+        cpu: 100m
+        memory: 400Mi
+    metricServer:
+      limits:
+        cpu: 2
+        memory: 400Mi
+      requests:
+        cpu: 100m
+        memory: 400Mi
+    webhooks:
+      limits:
+        cpu: 2
+        memory: 300Mi
+      requests:
+        cpu: 200m
+        memory: 300Mi
+  permissions:
+    operator:
+      restrict:
+        #  Restrict secret access and limited to KEDA namespace https://keda.sh/docs/2.14/operate/cluster/#restrict-secret-access
+        secret: false
+    metricServer:
+      restrict:
+        #  Restrict secret access and limited to KEDA namespace https://keda.sh/docs/2.14/operate/cluster/#restrict-secret-access
+        secret: false
+
+# -- [Trivy operator Helm chart values](../../../external-charts/trivy-operator/trivy-operator.md#values)
+# @default -- A subset of values are overridden for Trivy operator Helm chart under the key `trivy`
+trivy:
+  # Managed Identity used by the Trivy operator to pull images from the container registry
+  managedIdentity:
+    clientID:
+  podDisruptionBudget:
+    operator:
+      enabled: false
+      minAvailable: 1
+  operator:
+    replicas: 2
+    # these consume a lot of memory so keep them to a minimum (defaults to 10)
+    scanJobsConcurrentLimit: 1
+    podDisruptionBudget:
+      enabled: true
+      minAvailable: 1
+    clusterComplianceEnabled: false
+    infraAssessmentScannerEnabled: false
+    sbomGenerationEnabled: false
+  excludeNamespaces: kube-system,kube-public,kube-node-lease
+  # operator resources
+  resources:
+    limits:
+      cpu: 1
+      memory: 1000Mi
+    requests:
+      cpu: 100m
+      memory: 1000Mi
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+      - ALL
+    runAsNonRoot: true
+    readOnlyRootFilesystem: true
+  # operator affinity
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - trivy
+        topologyKey: "kubernetes.io/hostname"
+  trivy:
+    ignoreUnfixed: true
+    severity: HIGH,CRITICAL
+    serviceMonitor:
+      enabled: true
+    resources:
+      # resources for jobs
+      requests:
+        cpu: 100m
+        memory: 1000Mi
+      limits:
+        cpu: 1
+        memory: 1000Mi
+    server:
+      resources:
+        requests:
+          cpu: 200m
+          memory: 1000Mi
+          # ephemeral-storage: "2Gi"
+        limits:
+          cpu: 1
+          memory: 1000Mi
+          # ephemeral-storage: "2Gi"
+
+# -- [External secrets Helm chart values](../../../external-charts/external-secrets/external-secrets.md#values)
+# @default -- A subset of values are overridden for External secrets Helm chart under the key `external-secrets`
+external-secrets:
+  leaderElect: true
+  podDisruptionBudget: &external-secrets-pod-disruption-budget
+    enabled: true
+    minAvailable: 1
+  replicaCount: 2
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/instance
+            operator: In
+            values:
+            - external-secrets
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - external-secrets
+        topologyKey: "kubernetes.io/hostname"
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+  resources:
+    limits:
+      cpu: 100m
+      memory: 500Mi
+    requests:
+      cpu: 10m
+      memory: 500Mi
+  webhook:
+    podDisruptionBudget: *external-secrets-pod-disruption-budget
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/instance
+              operator: In
+              values:
+              - external-secrets
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - external-secrets-webhook
+          topologyKey: "kubernetes.io/hostname"
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+    replicaCount: 2
+    resources:
+      limits:
+        cpu: 100m
+        memory: 500Mi
+      requests:
+        cpu: 10m
+        memory: 500Mi
+  certController:
+    podDisruptionBudget: *external-secrets-pod-disruption-budget
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/instance
+              operator: In
+              values:
+              - external-secrets
+            - key: app.kubernetes.io/name
+              operator: In
+              values:
+              - external-secrets-cert-controller
+          topologyKey: "kubernetes.io/hostname"
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: topology.kubernetes.io/zone
+        whenUnsatisfiable: ScheduleAnyway
+    replicaCount: 2
+    resources:
+      limits:
+        cpu: 100m
+        memory: 500Mi
+      requests:
+        cpu: 10m
+        memory: 500Mi
+
+# -- [Trust manager Helm chart values](../../../external-charts/trustmanager/trust-manager.md#values)
+# @default -- A subset of values are overridden for Trust manager Helm chart under the key `trust-manager`
+trust-manager:
+  replicaCount: 2
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - trust-manager
+        topologyKey: "kubernetes.io/hostname"
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  topologySpreadConstraints:
+    - maxSkew: 1
+      topologyKey: topology.kubernetes.io/zone
+      whenUnsatisfiable: ScheduleAnyway
+  resources:
+    limits:
+      cpu: 500m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# -- [Descheduler Helm chart values](../../../external-charts/descheduler/descheduler.md#values)
+# @default -- A subset of values are overridden for Descheduler Helm chart under the key `descheduler`
+descheduler:
+  cmdOptions:
+    logging-format: json
+    v: 2
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1000Mi
+    limits:
+      cpu: 1
+      memory: 1000Mi
+
+# -- Release label to set on all service monitors
+serviceMonitor:
+  labels:
+    release: monitoring

@@ -1,0 +1,41 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: limit-ingress-nginx-custom-snippets
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: check-ingress-annotations
+      match:
+        any:
+          - resources:
+              kinds:
+                - networking.k8s.io/*/Ingress
+      preconditions:
+        all:
+          - key: "{{`{{request.object.metadata.annotations | keys(@) }}`}}"
+            operator: AnyIn
+            value:
+              - "nginx.ingress.kubernetes.io/*-snippet"
+      validate:
+        message: "Use of ingress-nginx *-snippet annotations is restricted to configuration-snippet with X-Frame-Options DENY/SAMEORIGIN only"
+        foreach:
+          - list: "request.object.metadata.annotations | items(@, 'key', 'value')"
+            preconditions:
+              all:
+                - key: "{{`{{element.key}}`}}"
+                  operator: Equals
+                  value: "nginx.ingress.kubernetes.io/*-snippet"
+            deny:
+              conditions:
+                any:
+                  - key: "{{`{{ element.key }}`}}"
+                    operator: NotEquals
+                    value: "nginx.ingress.kubernetes.io/configuration-snippet"
+                    message: "nginx.ingress.kubernetes.io/*-snippet not allowed except for configuration-snippet"
+                  - key: "{{`{{ element.value }}`}}"
+                    operator: AnyNotIn
+                    message: "Only allowed to set X-Frame-Options in configuration-snippet"
+                    value:
+                      - 'more_set_headers X-Frame-Options "DENY";'
+                      - 'more_set_headers X-Frame-Options "SAMEORIGIN";'

@@ -1,0 +1,2 @@
+destination_repo: nexus/aquasecurity/trivy
+version: 0.59.1

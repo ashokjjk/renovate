@@ -1,0 +1,26 @@
+{{- if .Values.enableMutators }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: inject-ingress-auth-headers
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: inject-ingress-auth-headers
+      match:
+        any:
+          - resources:
+              kinds:
+                - Ingress
+      preconditions:
+        all:
+          - key: {{ `"{{ request.object.metadata.annotations.\"ifs.auth.jwt/skip\" || '' }}"` }}
+            operator: NotEquals
+            value: 'true'
+      mutate:
+        patchStrategicMerge:
+          metadata:
+            annotations:
+              nginx.ingress.kubernetes.io/auth-url: http://jwtverifier.platform.svc.cluster.local:8080
+              nginx.ingress.kubernetes.io/auth-response-headers: authorization
+{{- end}}

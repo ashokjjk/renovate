@@ -1,0 +1,11 @@
+apiVersion: v2
+name: kyverno
+description: "Wrapper chart for installing kyverno"
+version: 3.3.7
+maintainers:
+  - name: Cloud Engineering, Bhagya Kandage
+    email: bhagya.kandage@ifs.com
+dependencies:
+  - name: kyverno
+    version: 3.3.7
+    repository: https://kyverno.github.io/kyverno/

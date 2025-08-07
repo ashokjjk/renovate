@@ -1,0 +1,59 @@
+# default cluster hostname
+ingress:
+  # -- The hostname of ingress to which the certificate is provisioned
+  host: dummy.host.com
+
+# -- The access token issuer URL for JWT verifier
+accessTokenIssuer: https://xxx
+# -- The JWKS URL for JWT verifier
+jwksUrl: https://yyy
+# -- The stage for JWT verifier
+stage: dev
+
+# -- The client ID of the workload identity for External secrets
+externalSecretsWorkloadIdentityClientId: xxx
+# -- The array of cluster secret stores for External secrets. Each element should be in the form of { url: Azure Key vault URL, name: Name of the cluster secret store}
+azureVaults:
+  - url: xxx
+    name: default
+
+# point to an acme server (if other than Let's encrypt acme server is required we need to add support for the additional credentials)
+certmanager:
+  # -- The key of Nexus ACME key for External secret
+  acmeKey: acmekey
+  acme:
+    # -- The URL of ACME server
+    server: https://yyy
+    # -- Email address used by the certificate issuer to contact us
+    email: "xxxx@example.com"
+    azureDNS:
+      # -- Azure subscription ID of Azure public DNS zone
+      subscriptionID: ""
+      # -- Azure resource group name of Azure public DNS zone
+      resourceGroupName: ""
+      # --The name of Azure public DNS zone to which certificates are issued
+      hostedZoneName: ""
+      managedIdentity:
+        # --The client ID of Azure managed identity for cert manager
+        clientID: ""
+
+trivy:
+  managedIdentity:
+    # -- The client ID of the workload identity for Trivy Operator
+    clientID: ""
+  podDisruptionBudget:
+    operator:
+      # -- Enable PDB for Trivy Operator
+      enabled: false
+      # -- Minimum available replicas of PDB for Trivy Operator
+      minAvailable: 1
+      # -- Maximum available replicas of PDB for Trivy Operator
+      maxUnavailable: 0
+
+jwk-provider:
+  # -- Create external secret for jwk-provider RSA key
+  createSecret: true
+  # -- The name of external secret for jwk-provider RSA key
+  secretName: jwk-provider-rsa-key
+  # -- The key of Azure Key vault for jwk-provider RSA key
+  keyVaultKey: jwkProviderKey

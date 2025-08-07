@@ -1,0 +1,2 @@
+destination_repo: nexus/linkerd/debug
+version: stable-2.14.10

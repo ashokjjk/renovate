@@ -1,0 +1,34 @@
+{{- $settings := index (.Values.general | default (dict)) "check-ingress-annotation" | default (dict) }}
+{{- if or $settings.enabled (and (not (hasKey $settings "enabled")) .Values.default.enabled) }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: check-ingress-annotation
+spec:
+  validationFailureAction: {{ default .Values.default.validationFailureAction $settings.validationFailureAction }}
+  failurePolicy: {{ default .Values.default.failurePolicy $settings.failurePolicy }}
+  admission: {{ default .Values.default.admission $settings.admission }}
+  background: {{ default .Values.default.background $settings.background }}
+  rules:
+    - name: check-annotation
+      skipBackgroundRequests: true
+      match:
+        any:
+          - resources:
+              kinds:
+                - Ingress
+      {{- include "exclusions" $settings | nindent 6 }}
+      preconditions:
+        all:
+          - key: "{{ "{{ request.operation || 'BACKGROUND' }}" }}"
+            operator: NotEquals
+            value: DELETE
+      validate:
+        allowExistingViolations: true
+        message: "The annotation nginx.ingress.kubernetes.io/service-upstream must be set to true."
+        pattern:
+          metadata:
+            annotations:
+              nginx.ingress.kubernetes.io/service-upstream: "true"
+{{- end }}
+

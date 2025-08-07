@@ -1,0 +1,32 @@
+apiVersion: v1
+name: platform-core-config
+version: 0.1.14
+maintainers:
+  - name: Cloud Engineering, Bhagya Kandage
+    email: bhagya.kandage@ifs.com
+description: |
+  This bundle install configurations required for platform-core. This installs following:
+  - Cluster Issuer for Cert Manager
+  - ExternalSecret for Linkerd CA cert
+  - ExternalSecret for Nexus ACME key
+  - Service account for External Secrets components
+  - External Secrets:ClusterSecretStore
+  - Certificate for TLS termination at ingress
+  - Namespace for Ingress controller
+  - ExternalSecret for JWT provider RSA key
+  - Issuer for Linkerd CA
+  - Certificate for Linkerd Identity Issuer
+  - ClusterIssuer for Linkerd Trust Anchor
+  - Certificate for Linkerd Identity Service
+  - Bundle for Linkerd Identity Trust Roots
+  - Certificate for Webhook Trust Issuer
+  - ClusterIssuer for Webhook Components
+  - Certificate for Linkerd Policy Validator
+  - Certificate for Linkerd Proxy Injector
+  - Certificate for Linkerd SP Validator
+  - Namespace for Linkerd
+  - Namespace for platform
+  - Global config map
+  - A set of priority classes for K8s scheduling
+  - sync-platform-config ClusterPolicy for Kyverno
+  - Namespace, Service account and Pod disruption budget for Trivy Operator

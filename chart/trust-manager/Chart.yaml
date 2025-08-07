@@ -1,0 +1,11 @@
+apiVersion: v2
+name: trust-manager
+description: "Wrapper chart for installing trust-manager"
+version: v0.16.0
+maintainers:
+  - name: Cloud Engineering, Bhagya Kandage
+    email: bhagya.kandage@ifs.com
+dependencies:
+  - name: trust-manager
+    version: v0.16.0
+    repository: https://charts.jetstack.io

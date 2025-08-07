@@ -1,0 +1,2 @@
+destination_repo: nexus/kubectl
+version: 1.30.7

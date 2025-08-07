@@ -1,0 +1,2 @@
+destination_repo: nexus/aquasecurity/node-collector
+version: 0.3.1

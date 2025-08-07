@@ -1,0 +1,2 @@
+#0.59.1
+FROM mirror.gcr.io/aquasec/trivy@sha256:029e990b328d149bf0a9ffe355919041e1f86192db2df47e217f8a36dd42ceac

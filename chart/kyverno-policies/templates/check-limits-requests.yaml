@@ -1,0 +1,87 @@
+{{- $settings := index (.Values.general | default (dict)) "check-limits-requests" | default (dict) }}
+{{- if or $settings.enabled (and (not (hasKey $settings "enabled")) .Values.default.enabled) }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: check-limits-requests
+spec:
+  validationFailureAction: {{ default .Values.default.validationFailureAction $settings.validationFailureAction }}
+  failurePolicy: {{ default .Values.default.failurePolicy $settings.failurePolicy }}
+  admission: {{ default .Values.default.admission $settings.admission }}
+  background: {{ default .Values.default.background $settings.background }}
+  rules:
+    - name: check-memory-limits-requests
+      skipBackgroundRequests: true
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      {{- include "exclusions" $settings | nindent 6 }}
+      preconditions:
+        all:
+          - key: "{{ "{{ request.operation || 'BACKGROUND' }}" }}"
+            operator: NotEquals
+            value: DELETE
+      validate:
+        allowExistingViolations: true
+        message: "resources.requests.memory must be equal to resources.limits.memory"
+        deny:
+          conditions:
+            any:
+            - key: "{{"{{ request.object.spec.containers[?resources.requests.memory!=resources.limits.memory] | length(@) }}"}}"
+              operator: NotEquals
+              value: 0
+    {{- if $settings.maxAllowedCpu }}
+    - name: check-cpu-limits-lower-than-allowed
+      skipBackgroundRequests: true
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      {{- if $settings.exclude }}
+      exclude:
+        {{- toYaml $settings.exclude | nindent 8 }}
+      {{- end}}
+      preconditions:
+        all:
+          - key: "{{ "{{ request.operation || 'BACKGROUND' }}" }}"
+            operator: NotEquals
+            value: DELETE
+      validate:
+        allowExistingViolations: true
+        message: "resources.requests.cpu must be lower than {{$settings.maxAllowedCpu}}"
+        deny:
+          conditions:
+            any:
+            - key: {{"{{"}}request.object.spec.containers[?resources.limits.cpu!=null && resources.limits.cpu<={{$settings.maxAllowedCpu}}] | length(@){{"}}"}}
+              operator: NotEquals
+              value: 0
+    {{- end}}
+    - name: check-cpu-limits-greater-than-requests
+      skipBackgroundRequests: true
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      {{- if $settings.exclude }}
+      exclude:
+        {{- toYaml $settings.exclude | nindent 8 }}
+      {{- end}}
+      preconditions:
+        all:
+          - key: "{{ "{{ request.operation || 'BACKGROUND' }}" }}"
+            operator: NotEquals
+            value: DELETE
+      validate:
+        allowExistingViolations: true
+        message: "resources.limits.cpu must if set, must be greater than resources.requests.cpu"
+        deny:
+          conditions:
+            any:
+            - key: "{{"{{ request.object.spec.containers[?resources.limits.cpu!=null && resources.requests.cpu>resources.limits.cpu] | length(@) }}"}}"
+              operator: NotEquals
+              value: 0
+{{- end}}
