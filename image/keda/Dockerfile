@@ -1,3 +1,3 @@
 #2.16.1
 # FROM ghcr.io/kedacore/keda@sha256:652b5296af89e9892aba110cf956476b02c81b2063144aa2e0d4b0e3a2a35c88
-FROM ghcr.io/kedacore/keda:2.16.1
+FROM ghcr.io/kedacore/keda:2.17.2@sha256:72dc058e478d7743a20f6f2f3af76a67d80b6f748a656a32d42a0ce560cc75c7
