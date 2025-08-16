@@ -2,11 +2,11 @@ apiVersion: v2
 name: trivy-operator
 description: "Wrapper chart for installing trivy-operator"
 # renovate: datasource=helm depName=trivy-operator registryUrl=https://aquasecurity.github.io/helm-charts
-version: 0.26.0
+version: 0.30.0
 maintainers:
   - name: Cloud Engineering, Bhagya Kandage
     email: bhagya.kandage@ifs.com
 dependencies:
   - name: trivy-operator
-    version: 0.26.0
+    version: 0.30.0
     repository: https://aquasecurity.github.io/helm-charts
