@@ -1,3 +1,3 @@
 #v1.15.5
 # FROM quay.io/jetstack/cert-manager-webhook@sha256:abd5e27b44dfa1af891cc6e063288c54091c120ce6aaf90d4998b4754defb593
-FROM quay.io/jetstack/cert-manager-webhook:v1.15.5
+FROM quay.io/jetstack/cert-manager-webhook:v1.15.5@sha256:abd5e27b44dfa1af891cc6e063288c54091c120ce6aaf90d4998b4754defb593

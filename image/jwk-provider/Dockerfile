@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.23.0-alpine AS build
+FROM --platform=$BUILDPLATFORM golang:1.23.0-alpine@sha256:d0b31558e6b3e4cc59f6011d79905835108c919143ebecc58f35965bf79948f4 AS build
 
 WORKDIR /src
 
@@ -19,7 +19,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w" -o /out/main .
 
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab
 
 COPY --from=build /out/main /
 

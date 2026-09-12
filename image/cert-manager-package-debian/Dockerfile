@@ -1,3 +1,3 @@
 #20210119.0
 # FROM quay.io/jetstack/cert-manager-package-debian@sha256:116133f68938ef568aca17a0c691d5b1ef73a9a207029c9a068cf4230053fed5
-FROM quay.io/jetstack/cert-manager-package-debian:20210119.0
+FROM quay.io/jetstack/cert-manager-package-debian:20210119.0@sha256:116133f68938ef568aca17a0c691d5b1ef73a9a207029c9a068cf4230053fed5
