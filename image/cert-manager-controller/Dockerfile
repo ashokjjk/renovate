@@ -1,3 +1,3 @@
 #v1.15.5
 # FROM quay.io/jetstack/cert-manager-controller@sha256:3f91a0ca90d1ff4ca4a2777de8e72b6299c55e1c3d83d064cd6fbc319a1f8ff4
-FROM quay.io/jetstack/cert-manager-controller:v1.15.5
+FROM quay.io/jetstack/cert-manager-controller:v1.15.5@sha256:3f91a0ca90d1ff4ca4a2777de8e72b6299c55e1c3d83d064cd6fbc319a1f8ff4
