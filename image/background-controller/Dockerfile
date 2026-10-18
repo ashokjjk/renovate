@@ -1,3 +1,3 @@
 #v1.13.4
 # FROM ghcr.io/kyverno/background-controller@sha256:184387a6fb4e7dda1c3f6057fe9e1d48c0f0e7e300118ad88505574ebd6486dd
-FROM ghcr.io/kyverno/background-controller:v1.13.4
+FROM ghcr.io/kyverno/background-controller:v1.19.1@sha256:8f1e9143373a27578cafc2d28d2c66ba0926c63b4c77e63de8d2fdd4a122859f
