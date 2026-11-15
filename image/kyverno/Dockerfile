@@ -1,3 +1,3 @@
 #v1.13.4
 # FROM ghcr.io/kyverno/kyverno@sha256:7d82b3a12b8dbd2d840249aa2bdcb6f35c571077b6bf6ecccde9393cf205131e
-FROM ghcr.io/kyverno/kyverno:v1.13.4
+FROM ghcr.io/kyverno/kyverno:v1.20.0@sha256:9de49c5416ea536f00a205527197ac048abdf32c5a75d633cd9afff8928f359d
